@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+
+# Imports
+  myKeyPair:
+    Description: 'use for EC2 instance' 
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: 'aws-ec2'
+
+  BucketName:
+    Type: String
+    Default: steve-codedeploy-bucket
+
+  AMI:
+    Description: 'AMI of EC2'
+    Type: AWS::EC2::Image::Id
+    Default: ami-0fd0765afb77bcca7
+
+  vpcId:
+    Type: String
+    Default: 'vpc-435bcc28'
+
+Resources:
+
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: CodeDeploy-SG
+      GroupDescription: >-
+        Enable HTTP accrss via port 8080 & port 22
+      VpcId: !Ref vpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+# Launch template for the tomcat app servers & supporting config files
+  AppLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: 'Launch-Template-Tomcat9'
+      LaunchTemplateData:
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            AssociatePublicIpAddress: true
+            DeleteOnTermination: true
+        ImageId: !Ref AMI
+        InstanceType: t3.medium
+        KeyName: !Ref myKeyPair
+        UserData: 
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            sudo yum update -y
+            sudo yum install -y amazon-cloudwatch-agent
+            sudo yum install -y ruby
+            sudo yum install -y wget
+            cd /home/ec2-user
+            wget https://aws-codedeploy-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/latest/install
+            chmod +x ./install
+            sudo ./install auto
+            sudo amazon-linux-extras install java-openjdk11
+            sudo aws s3api get-object --bucket ${BucketName} --key config/tomcat.service /etc/systemd/system/tomcat.service
+            useradd -d /user/share/tomcat -s /bin/nologin tomcat
+            sudo aws s3api get-object --bucket ${BucketName} --key lib/apache-tomcat-9.0.41.tar.gz /tmp/apache-tomcat-9.0.41.tar.gz
+            tar -zxvf /tmp/apache-tomcat-*.tar.gz
+            mkdir -p /usr/share/tomcat
+            mv apache-tomcat-9.0.41/* /usr/share/tomcat
+            chown -R tomcat:tomcat /usr/share/tomcat
+            sudo systemctl daemon-reload
+            sudo systemctl start tomcat
+            sudo systemctl enable tomcat
+            cd /home/ec2-user
+            sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-all-3.14.1.jar /usr/share/tomcat/lib/redisson-all-3.14.1.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-tomcat-9-3.14.1.jar /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key lib/tomcat-oidcauth-2.3.0-tomcat90.jar /usr/share/tomcat/lib/tomcat-oidcauth-2.3.0-tomcat90.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key config/server.xml /usr/share/tomcat/conf/server.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key config/context.xml /usr/share/tomcat/conf/context.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key config/redisson.yaml /usr/share/tomcat/conf/redisson.yaml
+            sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-all-3.14.1.jar 
+            sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar 
+            sudo chown tomcat:tomcat /usr/share/tomcat/lib/tomcat-oidcauth-2.3.0-tomcat90.jar
+            sudo systemctl restart tomcat
+
+
+
+
+
