@@ -1,0 +1,97 @@
+{
+    "LaunchTemplateData": {
+        "EbsOptimized": false,
+        "IamInstanceProfile": {
+            "Arn": "arn:aws:iam::532805286864:instance-profile/CodeDeployDemo-EC2-Instance-Profile"
+        },
+        "BlockDeviceMappings": [
+            {
+                "DeviceName": "/dev/xvda",
+                "Ebs": {
+                    "Encrypted": false,
+                    "DeleteOnTermination": true,
+                    "SnapshotId": "snap-0916cf3d37f754ba1",
+                    "VolumeSize": 8,
+                    "VolumeType": "gp2"
+                }
+            }
+        ],
+        "NetworkInterfaces": [
+            {
+                "AssociatePublicIpAddress": true,
+                "DeleteOnTermination": true,
+                "Description": "",
+                "DeviceIndex": 0,
+                "Groups": [
+                    "sg-0d9118911517ac93c"
+                ],
+                "InterfaceType": "interface",
+                "Ipv6Addresses": [],
+                "PrivateIpAddresses": [
+                    {
+                        "Primary": true,
+                        "PrivateIpAddress": "172.31.12.234"
+                    }
+                ],
+                "SubnetId": "subnet-a720a1cc",
+                "NetworkCardIndex": 0
+            }
+        ],
+        "ImageId": "ami-0fd0765afb77bcca7",
+        "InstanceType": "t2.micro",
+        "KeyName": "aws-ec2",
+        "Monitoring": {
+            "Enabled": false
+        },
+        "Placement": {
+            "AvailabilityZone": "ap-northeast-2a",
+            "GroupName": "",
+            "Tenancy": "default"
+        },
+        "DisableApiTermination": false,
+        "InstanceInitiatedShutdownBehavior": "stop",
+        "TagSpecifications": [
+            {
+                "ResourceType": "instance",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "CodeDeployDemo"
+                    }
+                ]
+            }
+        ],
+        "CreditSpecification": {
+            "CpuCredits": "standard"
+        },
+        "CpuOptions": {
+            "CoreCount": 1,
+            "ThreadsPerCore": 1
+        },
+        "CapacityReservationSpecification": {
+            "CapacityReservationPreference": "open"
+        },
+        "HibernationOptions": {
+            "Configured": false
+        },
+        "MetadataOptions": {
+            "HttpTokens": "optional",
+            "HttpPutResponseHopLimit": 1,
+            "HttpEndpoint": "enabled",
+            "HttpProtocolIpv6": "disabled",
+            "InstanceMetadataTags": "disabled"
+        },
+        "EnclaveOptions": {
+            "Enabled": false
+        },
+        "PrivateDnsNameOptions": {
+            "HostnameType": "ip-name",
+            "EnableResourceNameDnsARecord": false,
+            "EnableResourceNameDnsAAAARecord": false
+        },
+        "MaintenanceOptions": {
+            "AutoRecovery": "default"
+        },
+        "DisableApiStop": false
+    }
+}
