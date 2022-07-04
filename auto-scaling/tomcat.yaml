@@ -77,13 +77,13 @@ Resources:
             cd /home/ec2-user
             sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-all-3.14.1.jar /usr/share/tomcat/lib/redisson-all-3.14.1.jar
             sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-tomcat-9-3.14.1.jar /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key lib/tomcat-oidcauth-2.3.0-tomcat90.jar /usr/share/tomcat/lib/tomcat-oidcauth-2.3.0-tomcat90.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key lib/mysql-connector-java-8.0.28.jar /usr/share/tomcat/lib/mysql-connector-java-8.0.28.jar
             sudo aws s3api get-object --bucket ${BucketName} --key config/server.xml /usr/share/tomcat/conf/server.xml
             sudo aws s3api get-object --bucket ${BucketName} --key config/context.xml /usr/share/tomcat/conf/context.xml
             sudo aws s3api get-object --bucket ${BucketName} --key config/redisson.yaml /usr/share/tomcat/conf/redisson.yaml
             sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-all-3.14.1.jar 
             sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar 
-            sudo chown tomcat:tomcat /usr/share/tomcat/lib/tomcat-oidcauth-2.3.0-tomcat90.jar
+            sudo chown tomcat:tomcat /usr/share/tomcat/lib/mysql-connector-java-8.0.28.jar
             sudo systemctl restart tomcat
 
 
