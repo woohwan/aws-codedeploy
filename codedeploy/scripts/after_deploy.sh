@@ -1,4 +1,4 @@
 #!/bin/bash  
-cd /usr/share/tomcat/bin/
-shutdown.sh
-startup.sh
+cd /opt/tomcat/bin/
+# sudo systemctl stop tomcat
+# sudo systemctl start tomcat

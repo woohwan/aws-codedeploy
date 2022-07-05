@@ -2,6 +2,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
 
 # Imports
+  vpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: ''
+  
   myKeyPair:
     Description: 'use for EC2 instance' 
     Type: AWS::EC2::KeyPair::KeyName
@@ -15,19 +19,25 @@ Parameters:
     Description: 'AMI of EC2'
     Type: AWS::EC2::Image::Id
     Default: ami-0fd0765afb77bcca7
-
-  vpcId:
+  
+  CodeDeployInstanceProfileName:
+    Description: EC2 Instance Profile for CodeDeploy
     Type: String
-    Default: 'vpc-435bcc28'
+    Default: CodeDeployDemo-EC2-Instance-Profile
+
+  Environment:
+    Description: 'dev, prod'
+    Type: String
+    Default: 'dev'
 
 Resources:
 
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: CodeDeploy-SG
+      GroupName: 'launch-template-sg'
       GroupDescription: >-
-        Enable HTTP accrss via port 8080 & port 22
+        Enable HTTP accrss via port 8080 & port 22 
       VpcId: !Ref vpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -38,9 +48,12 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: "Name"
+          Value: 'launch-template-sg'
 
 # Launch template for the tomcat app servers & supporting config files
-  AppLaunchTemplate:
+  QuaterbackLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateName: 'Launch-Template-Tomcat9'
@@ -49,9 +62,18 @@ Resources:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
             DeleteOnTermination: true
+            Groups:
+              - !Ref AppSecurityGroup
         ImageId: !Ref AMI
+        IamInstanceProfile: 
+          Name: !Ref CodeDeployInstanceProfileName
         InstanceType: t3.medium
         KeyName: !Ref myKeyPair
+        TagSpecifications:
+        - ResourceType: instance
+          Tags:
+          - Key: Name
+            Value: Quterback WAS
         UserData: 
           Fn::Base64: !Sub |
             #!/bin/bash
@@ -63,28 +85,36 @@ Resources:
             wget https://aws-codedeploy-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/latest/install
             chmod +x ./install
             sudo ./install auto
-            sudo amazon-linux-extras install java-openjdk11
-            sudo aws s3api get-object --bucket ${BucketName} --key config/tomcat.service /etc/systemd/system/tomcat.service
-            useradd -d /user/share/tomcat -s /bin/nologin tomcat
-            sudo aws s3api get-object --bucket ${BucketName} --key lib/apache-tomcat-9.0.41.tar.gz /tmp/apache-tomcat-9.0.41.tar.gz
+            sudo rpm --import https://yum.corretto.aws/corretto.key 
+            sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+            sudo yum install -y java-15-amazon-corretto-devel
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/tomcat.service /etc/systemd/system/tomcat.service
+            useradd -d /opt/tomcat -s /bin/nologin tomcat
+            # tommcat install
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-9.0.0.M26.tar.gz /tmp/apache-tomcat-9.0.0.M26.tar.gz
             tar -zxvf /tmp/apache-tomcat-*.tar.gz
-            mkdir -p /usr/share/tomcat
-            mv apache-tomcat-9.0.41/* /usr/share/tomcat
-            chown -R tomcat:tomcat /usr/share/tomcat
+            mkdir -p /opt/tomcat
+            mv apache-tomcat-9.0.0.M26/* /opt/tomcat
+            # springframe 5.1.1 install
+            sudo aws s3 cp s3://${BucketName}/${Environment}/lib/spring-framework-5.1.1.RELEASE-dist.zip /tmp/spring-framework-5.1.1.RELEASE-dist.zip
+            unzip /tmp/spring-framework-5.1.1.RELEASE-dist.zip
+            mv spring-framework-5.1.1.RELEASE/libs/* /opt/tomcat/lib
+            chown -R tomcat:tomcat /opt/tomcat
             sudo systemctl daemon-reload
             sudo systemctl start tomcat
             sudo systemctl enable tomcat
             cd /home/ec2-user
-            sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-all-3.14.1.jar /usr/share/tomcat/lib/redisson-all-3.14.1.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key lib/redisson-tomcat-9-3.14.1.jar /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key lib/mysql-connector-java-8.0.28.jar /usr/share/tomcat/lib/mysql-connector-java-8.0.28.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key config/server.xml /usr/share/tomcat/conf/server.xml
-            sudo aws s3api get-object --bucket ${BucketName} --key config/context.xml /usr/share/tomcat/conf/context.xml
-            sudo aws s3api get-object --bucket ${BucketName} --key config/redisson.yaml /usr/share/tomcat/conf/redisson.yaml
-            sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-all-3.14.1.jar 
-            sudo chown tomcat:tomcat /usr/share/tomcat/lib/redisson-tomcat-9-3.14.1.jar 
-            sudo chown tomcat:tomcat /usr/share/tomcat/lib/mysql-connector-java-8.0.28.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/mysql-connector-java-8.0.28.jar /opt/tomcat/lib/mysql-connector-java-8.0.28.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/server.xml /opt/tomcat/conf/server.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/context.xml /opt/tomcat/conf/context.xml
+            sudo chown tomcat:tomcat /opt/tomcat/lib/mysql-connector-java-8.0.28.jar
             sudo systemctl restart tomcat
+  TomcatInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref QuaterbackLaunchTemplate
+        Version: !GetAtt QuaterbackLaunchTemplate.LatestVersionNumber
 
 
 

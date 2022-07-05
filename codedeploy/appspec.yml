@@ -2,14 +2,14 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /usr/share/tomcat/webapps
+    destination: /opt/tomcat/webapps
 permissions:
-  - object: /usr/share/tomcat/webapps
+  - object: /opt/tomcat/webapps
     pattern: "*"
     owner: root
     mode: 777
     type:
-      -file
+      - file
 
 hooks:
   AfterInstall:
