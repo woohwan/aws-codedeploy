@@ -31,3 +31,7 @@ aws deploy create-deployment-group \
   --service-role-arn arn:aws:iam::532805286864:role/CodeDeployServiceRole
 ```  
 
+3. 배포하려는 war과 appspec.yml, scripts/* 을 zip 하여 s3에 upload한다  
+```  
+aws s3 cp .\TestApp.zip s3://steve-codedeploy-bucket/web/target/TestApp.zip
+```  
