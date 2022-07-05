@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+
+# Imports
+  vpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: ''
+  
+  myKeyPair:
+    Description: 'use for EC2 instance' 
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: 'aws-ec2'
+
+  BucketName:
+    Type: String
+    Default: steve-codedeploy-bucket
+
+  AMI:
+    Description: 'AMI of EC2'
+    Type: AWS::EC2::Image::Id
+    Default: ami-0fd0765afb77bcca7
+  
+  Environment:
+    Description: 'dev, prod'
+    Type: String
+    Default: 'dev'
+
+Resources:
+
+  HttpdSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: 'launch-template-httpd-sg'
+      GroupDescription: >-
+        Enable HTTP accrss via port 80 & port 22 
+      VpcId: !Ref vpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: "Name"
+          Value: 'launch-template-httpd-sg'
+
+# Launch template for the tomcat app servers & supporting config files
+  HttpdLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: 'Launch-Template-HTTPD'
+      LaunchTemplateData:
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            AssociatePublicIpAddress: true
+            DeleteOnTermination: true
+            Groups:
+              - !Ref HttpdSecurityGroup
+        ImageId: !Ref AMI
+        InstanceType: t3.micro
+        KeyName: !Ref myKeyPair
+        TagSpecifications:
+        - ResourceType: instance
+          Tags:
+          - Key: Name
+            Value: HTTPD
+        UserData: 
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y amazon-cloudwatch-agent
+            yum install -y ruby
+            yum install -y wget
+            cd /home/ec2-user
+            wget https://aws-codedeploy-ap-northeast-2.s3.ap-northeast-2.amazonaws.com/latest/install
+            chmod +x ./install
+            ./install auto
+            yum install -y httpd-2.4.53 httpd-devel-2.4.53
+            yum install -y mod_ssl-2.4.53
+            yum install -y autoconf libtools
+            
+
+  TomcatInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref HttpdLaunchTemplate
+        Version: !GetAtt HttpdLaunchTemplate.LatestVersionNumber
+
+
+
+
+
