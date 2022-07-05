@@ -2,18 +2,16 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /opt/tomcat/webapps
-permissions:
-  - object: /opt/tomcat/webapps
-    pattern: "*"
-    owner: root
-    mode: 777
-    type:
-      - file
+    destination: /home/ec2-user/deployed
 
 hooks:
   AfterInstall:
-    - location: scripts/after_deploy.sh
+    - location: scripts/application_deploy.sh
       timeout: 300
       runas: root
+  ApplicationStart:
+    - location: scripts/delete_artifacts.sh
+      timeout: 300
+      runas: root
+    
   
