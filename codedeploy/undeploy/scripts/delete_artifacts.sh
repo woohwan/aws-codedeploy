@@ -1,3 +1,3 @@
-#!/bin/bash  
-cd /home/ec2-user/deployed
-rm -rf *
+#!/bin/bash
+cd /opt/tomcat/webapps
+rm -rf validate.war validate
