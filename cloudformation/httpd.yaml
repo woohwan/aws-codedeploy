@@ -4,7 +4,13 @@ Parameters:
 # Imports
   vpcId:
     Type: AWS::EC2::VPC::Id
-    Default: ''
+    Default: vpc-435bcc28
+
+  # ap-northeast-2a
+  SubnetA:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet for tomcat 
+    Default: subnet-a720a1cc
   
   myKeyPair:
     Description: 'use for EC2 instance' 
@@ -19,6 +25,11 @@ Parameters:
     Description: 'AMI of EC2'
     Type: AWS::EC2::Image::Id
     Default: ami-0fd0765afb77bcca7
+  
+  CodeDeployInstanceProfileName:
+    Description: EC2 Instance Profile for CodeDeploy
+    Type: String
+    Default: CodeDeployDemo-EC2-Instance-Profile
   
   Environment:
     Description: 'dev, prod'
@@ -57,9 +68,12 @@ Resources:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
             DeleteOnTermination: true
+            SubnetId: !Ref SubnetA
             Groups:
               - !Ref HttpdSecurityGroup
         ImageId: !Ref AMI
+        IamInstanceProfile: 
+          Name: !Ref CodeDeployInstanceProfileName
         InstanceType: t3.micro
         KeyName: !Ref myKeyPair
         TagSpecifications:
@@ -79,11 +93,26 @@ Resources:
             chmod +x ./install
             ./install auto
             yum install -y httpd-2.4.53 httpd-devel-2.4.53
-            yum install -y mod_ssl-2.4.53
-            yum install -y autoconf libtools
-            
+            yum install -y mod_ssl-2.4.53 autoconf libtools
 
-  TomcatInstance:
+            # install and configure mod_jk
+            aws s3 cp s3://${BucketName}/${Environment}/lib/mod_jk.so /etc/httpd/modules/mod_jk.so
+            chmod 755 /etc/httpd/modules/mod_jk.so
+            aws s3 cp  s3://${BucketName}/${Environment}/config/httpd-jk.conf /etc/httpd/conf.modules.d/httpd-jk.conf
+            aws s3 cp  s3://${BucketName}/${Environment}/config/uriworkermap.properties /etc/httpd/conf.d/uriworkermap.properties
+            aws s3 cp  s3://${BucketName}/${Environment}/config/workers.properties /etc/httpd/conf.d/workers.properties
+
+            # configure mpm event module
+            aws s3 cp  s3://${BucketName}/${Environment}/config/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
+
+            # configure virutal host
+            aws s3 cp  s3://${BucketName}/${Environment}/config/virtualhost.conf /etc/httpd/conf.d/virtualhost.conf
+
+            systemctl start httpd
+            systemctl enable httpd
+
+            # modify kuernel setting
+  HttpdInstance:
     Type: AWS::EC2::Instance
     Properties:
       LaunchTemplate:
