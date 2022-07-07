@@ -27,7 +27,7 @@ Resources:
             Principal:
               Service:
                 - ec2.amazonaws.com
-              Action: sts:AssumeRole
+            Action: sts:AssumeRole
       Description: Role to provide access to S3
       Policies:
         - PolicyDocument:
