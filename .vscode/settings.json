@@ -2,5 +2,5 @@
     "yaml.schemas": {
         "https://raw.githubusercontent.com/awslabs/goformation/master/schema/cloudformation.schema.json": "file:///Users/whpark/workspace/aws-codedeploy/auto-scaling/tomcat.yaml"
     },
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

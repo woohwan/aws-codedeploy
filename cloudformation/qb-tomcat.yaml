@@ -103,20 +103,20 @@ Resources:
             useradd -d /opt/tomcat -s /bin/nologin tomcat
             
             # tommcat install
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-10.0.22.tar.gz /tmp/apache-tomcat-10.0.22.tar.gz
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-9.0.64.tar.gz /tmp/apache-tomcat-9.0.64.tar.gz
             tar -zxvf /tmp/apache-tomcat-*.tar.gz
             mkdir -p /opt/tomcat
-            mv apache-tomcat-10.0.22/* /opt/tomcat
+            mv apache-tomcat-9.0.64/* /opt/tomcat
             
             chown -R tomcat:tomcat /opt/tomcat
             sudo systemctl daemon-reload
             sudo systemctl start tomcat
             sudo systemctl enable tomcat
             cd /home/ec2-user
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/mysql-connector-java-8.0.28.jar /opt/tomcat/lib/mysql-connector-java-8.0.28.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/mysql-connector-java-8.0.29.jar /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
             sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/server.xml /opt/tomcat/conf/server.xml
             sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/context.xml /opt/tomcat/conf/context.xml
-            sudo chown tomcat:tomcat /opt/tomcat/lib/mysql-connector-java-8.0.28.jar
+            sudo chown tomcat:tomcat /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
             sudo systemctl restart tomcat
   # TomcatInstance:
   #   Type: AWS::EC2::Instance
