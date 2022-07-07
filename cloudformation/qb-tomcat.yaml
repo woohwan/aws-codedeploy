@@ -101,11 +101,12 @@ Resources:
             sudo yum install -y java-15-amazon-corretto-devel
             sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/tomcat.service /etc/systemd/system/tomcat.service
             useradd -d /opt/tomcat -s /bin/nologin tomcat
+            
             # tommcat install
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-9.0.0.M26.tar.gz /tmp/apache-tomcat-9.0.0.M26.tar.gz
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-10.0.22.tar.gz /tmp/apache-tomcat-10.0.22.tar.gz
             tar -zxvf /tmp/apache-tomcat-*.tar.gz
             mkdir -p /opt/tomcat
-            mv apache-tomcat-9.0.0.M26/* /opt/tomcat
+            mv apache-tomcat-10.0.22/* /opt/tomcat
             
             chown -R tomcat:tomcat /opt/tomcat
             sudo systemctl daemon-reload
