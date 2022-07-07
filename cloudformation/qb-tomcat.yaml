@@ -38,8 +38,6 @@ Parameters:
     Type: String
     Default: 'dev'
 
-
-
 Resources:
 
   AppSecurityGroup:
