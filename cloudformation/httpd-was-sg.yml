@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Security Group and Instance Profile
+
+Parameters:
+  vpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-435bcc28
+
+Resources:
+  HttpdSecurityGroup1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: 'cf-httpd-sg-1'
+      GroupDescription: >-
+        Enable HTTP accrss via port 80 & port 22 
+      VpcId: !Ref vpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: "Name"
+          Value: 'cf-httpd-sg-1'
+
+  WasSecurityGroup1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: 'cf-oss-was-sg-1'
+      GroupDescription: >-
+        Enable HTTP accrss via port 8080 & port 22 
+      VpcId: !Ref vpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: "Name"
+          Value: 'cf-oss-was-sg-1'
+
+  OutbuondRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 8009
+      ToPort: 8009
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+          - WasSecurityGroup1
+          - GroupId
+      GroupId:
+        Fn::GetAtt:
+          - HttpdSecurityGroup1
+          - GroupId
+
+  InboundRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 8009
+      ToPort: 8009
+      SourceSecurityGroupId: 
+        Fn::GetAtt: [ HttpdSecurityGroup1, GroupId]
+      GroupId: 
+        Fn::GetAtt: [ WasSecurityGroup1, GroupId]
+
+Outputs:
+  HttpdSecurityGroup1:
+    Value: !Ref HttpdSecurityGroup1
+    Export:
+      Name: HttpdSecurityGroup1
+  WasSecurityGroup1:
+    Value: !Ref WasSecurityGroup1
+    Export:
+      Name: WasSecurityGroup1

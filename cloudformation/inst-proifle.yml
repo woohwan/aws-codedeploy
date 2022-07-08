@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create Security Group and Instance Profile
+Parameters:
+  vpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-435bcc28
+
+Resources:
+
+  EC2InstanceS3AccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Description: Role to provide access to S3 created by Cloudformation
+      Policies:
+        - PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - "s3:PubOjbect"
+                  - "s3:Get*"
+                  - "s3:List"
+                Resource: "*"
+          PolicyName: OssEC2S3Access
+      RoleName: cf-OssEC2S3AccessRole
+
+  WasEC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      InstanceProfileName: WasEC2InstanceProfile
+      Roles: 
+        - !Ref EC2InstanceS3AccessRole
+
+
+Outputs:
+  EC2InstanceS3AccessRole:
+    Value: !Ref EC2InstanceS3AccessRole
+    Export:
+      Name: EC2InstanceS3AccessRole
+
+  WasEC2InstanceProfile:
+    Value: !Ref WasEC2InstanceProfile
+    Export:
+      Name: WasEC2InstanceProfile
+
+
+
+
+            
+      
+

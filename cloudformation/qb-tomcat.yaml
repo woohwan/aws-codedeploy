@@ -12,12 +12,20 @@ Parameters:
     Description: Subnet for tomcat 
     Default: subnet-a720a1cc
 
-  
-
-  myKeyPair:
+  MyKeyPair:
     Description: 'use for EC2 instance' 
     Type: AWS::EC2::KeyPair::KeyName
     Default: aws-ec2
+
+  WasSecurityGroup:
+    Type: String
+    Description: Security group for tomcat
+    Default: sg-0394508f53d595c71
+
+  InstanceProfileName:
+    Description: EC2 instance Porilfe access to S3
+    Type: String
+    Default: WasEC2InstanceProfile 
 
   BucketName:
     Type: String
@@ -27,11 +35,6 @@ Parameters:
     Description: 'AMI of EC2'
     Type: AWS::EC2::Image::Id
     Default: ami-0fd0765afb77bcca7
-  
-  CodeDeployInstanceProfileName:
-    Description: EC2 Instance Profile for CodeDeploy
-    Type: String
-    Default: CodeDeployDemo-EC2-Instance-Profile
 
   Environment:
     Description: 'dev, prod'
@@ -40,68 +43,51 @@ Parameters:
 
 Resources:
 
-  AppSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: 'launch-template-sg'
-      GroupDescription: >-
-        Enable HTTP accrss via port 8080 & port 22 
-      VpcId: !Ref vpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8009
-          ToPort: 8009
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: "Name"
-          Value: 'launch-template-sg'
-
 # Launch template for the tomcat app servers & supporting config files
   QuaterbackLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      LaunchTemplateName: 'Launch-Template-Tomcat9'
+      LaunchTemplateName: 'cf-Launch-Template-Tomcat9'
       LaunchTemplateData:
         NetworkInterfaces:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
             DeleteOnTermination: true
             SubnetId: !Ref SubnetA
-            Groups:
-              - !Ref AppSecurityGroup
+            # Security Group Id
+            Groups: [!Ref WasSecurityGroup]
         ImageId: !Ref AMI
+        # Instance Profile Name
         IamInstanceProfile: 
-          Name: !Ref CodeDeployInstanceProfileName
+          Arn: !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/${InstanceProfileName}
         InstanceType: t3.medium
-        KeyName: !Ref myKeyPair
+        KeyName: !Ref MyKeyPair
         
         TagSpecifications:
         - ResourceType: instance
           Tags:
           - Key: Name
-            Value: quarterback tomcat
+            Value: cf-quarterback tomcat
         UserData: 
           Fn::Base64: !Sub |
             #!/bin/bash
             sudo yum update -y
             cd /home/ec2-user
+
+            # modify kuernel setting
+            aws s3 cp s3://${BucketName}/${Environment}/lib/config/qb/sysctl.conf sysctl.conf
+            cp sysctl.conf /etc/sysctl.conf
+            sysctl -p
+
             # install jdk 15
             sudo rpm --import https://yum.corretto.aws/corretto.key 
             sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
             sudo yum install -y java-15-amazon-corretto-devel
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/tomcat.service /etc/systemd/system/tomcat.service
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/tomcat.service /etc/systemd/system/tomcat.service
             useradd -d /opt/tomcat -s /bin/nologin tomcat
             
             # tommcat install
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/apache-tomcat-9.0.64.tar.gz /tmp/apache-tomcat-9.0.64.tar.gz
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/qb/apache-tomcat-9.0.64.tar.gz /tmp/apache-tomcat-9.0.64.tar.gz
             tar -zxvf /tmp/apache-tomcat-*.tar.gz
             mkdir -p /opt/tomcat
             mv apache-tomcat-9.0.64/* /opt/tomcat
@@ -111,9 +97,9 @@ Resources:
             sudo systemctl start tomcat
             sudo systemctl enable tomcat
             cd /home/ec2-user
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/mysql-connector-java-8.0.29.jar /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/server.xml /opt/tomcat/conf/server.xml
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/context.xml /opt/tomcat/conf/context.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/qb/mysql-connector-java-8.0.29.jar /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/server.xml /opt/tomcat/conf/server.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/context.xml /opt/tomcat/conf/context.xml
             sudo chown tomcat:tomcat /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
             sudo systemctl restart tomcat
   # TomcatInstance:

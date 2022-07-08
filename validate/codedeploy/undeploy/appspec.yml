@@ -1,0 +1,13 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ec2-user/deployed/rmTestApp
+
+hooks:
+  AfterInstall:
+    - location: scripts/delete_artifacts.sh
+      timeout: 300
+      runas: root
+
+  
