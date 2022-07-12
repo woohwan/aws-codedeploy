@@ -1,0 +1,22 @@
+먼저 tomcat-users.xml에  아래를 추가
+<user username="admin" password="password" roles="manager-gui"/>   # gui로 로그인 할 경우
+<user username="tomcat" password="tomcat" roles="standard,manager-script"/>
+
+# deploy under "path" context path
+curl -u tomcat:tomcat --upload-file validate.war http://localhost:8080/manager/text/deploy?path=/validate
+
+# undeploy
+curl -u tomcat:tomcat "http://localhost:8080/manager/text/undeploy?path=/validate"
+
+# stop
+ curl -u tomcat:tomcat http://localhost:8080/manager/text/stop?path=/validate
+
+
+# /home/ec2-user 아래 디텍터리 아래에 war file이 있을경우, FileNotFoundExcpetion (Permission Denied) 발생
+별도의 디렉토리를 생성할 경우, No Problem
+
+# root 로 실행함
+ [root@ip-172-31-11-169 app_deploy]# curl -u tomcat:tomcat http://localhost:8080/manager/text/deploy?war=file://app_deploy/validate.war
+
+
+curl --anyauth -u username:pwd -d path=/something -d war=file:target/someWar.war https://someurl.com/manager/deploy
