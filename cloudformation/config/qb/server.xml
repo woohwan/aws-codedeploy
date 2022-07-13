@@ -24,7 +24,7 @@
   <!-- Security listener. Documentation at /docs/config/listeners.html
   <Listener className="org.apache.catalina.security.SecurityListener" />
   -->
-  <!--APR library loader. Documentation at /docs/apr.html -->
+  <!-- APR library loader. Documentation at /docs/apr.html -->
   <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
   <!-- Prevent memory leaks due to use of particular java/javax APIs-->
   <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
@@ -38,6 +38,22 @@
     <!-- Editable user database that can also be used by
          UserDatabaseRealm to authenticate users
     -->
+	<!-- Datasource 1 read -->
+	<Resource auth="Container" driverClassName="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"
+	global="jdbc/qbreaddb" name="jdbc/qbreaddb" type="javax.sql.DataSource" 
+	factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+	url="jdbc:log4jdbc:mysql://dev-qb.cluster-c4uxammnbzx9.ap-northeast-2.rds.amazonaws.com:3306/test" 
+	username="admin" password="znjxjqor12#"/>
+
+	<!-- Datasource 2 write -->
+	<Resource auth="Container" driverClassName="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"
+	global="jdbc/qbwritedb" name="jdbc/qbwritedb" type="javax.sql.DataSource" 
+	factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+	url="jdbc:log4jdbc:mysql://dev-qb.cluster-c4uxammnbzx9.ap-northeast-2.rds.amazonaws.com:3306/test" 
+	username="admin" password="znjxjqor12#"/>
+
+
+
     <Resource name="UserDatabase" auth="Container"
               type="org.apache.catalina.UserDatabase"
               description="User database that can be updated and saved"
@@ -79,8 +95,7 @@
     <!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443
          This connector uses the NIO implementation. The default
          SSLImplementation will depend on the presence of the APR/native
-         library and the useOpenSSL attribute of the
-         AprLifecycleListener.
+         library and the useOpenSSL attribute of the AprLifecycleListener.
          Either JSSE or OpenSSL style configuration may be used regardless of
          the SSLImplementation selected. JSSE style configuration is used below.
     -->
@@ -115,8 +130,8 @@
     <!-- Define an AJP 1.3 Connector on port 8009 -->
     
     <Connector protocol="AJP/1.3"
-               address="0.0.0.0"
-               secretRequired="false"
+	       address="0.0.0.0"
+	       secretRequired="false" 
                port="8009"
                redirectPort="8443" />
     
@@ -130,7 +145,7 @@
     <!-- You should set jvmRoute to support load-balancing via AJP ie :
     <Engine name="Catalina" defaultHost="localhost" jvmRoute="jvm1">
     -->
-    <Engine name="Catalina" defaultHost="localhost">
+    <Engine name="Catalina" defaultHost="localhost" jvmRoute="tomcat1">
 
       <!--For clustering, please take a look at documentation at:
           /docs/cluster-howto.html  (simple how to)
@@ -146,12 +161,8 @@
              resources under the key "UserDatabase".  Any edits
              that are performed against this UserDatabase are immediately
              available for use by the Realm.  -->
-        <!-- Realm className="org.apache.catalina.realm.UserDatabaseRealm"
-               resourceName="UserDatabase"/ -->
-      <Realm className="org.apache.catalina.realm.DataSourceRealm"
-   dataSourceName="jdbc/webappdb" localDataSource="true"
-   userTable="user_accounts" userNameCol="user_name" userCredCol="user_pass"
-   userRoleTable="user_account_roles" roleNameCol="role_name" debug="9" />
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
       </Realm>
 
       <Host name="localhost"  appBase="webapps"
