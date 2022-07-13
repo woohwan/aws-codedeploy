@@ -1,16 +1,15 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
 
-# Imports
   vpcId:
     Type: AWS::EC2::VPC::Id
-    Default: vpc-435bcc28
+    Default: vpc-08e429b53dcd87621
 
-  # ap-northeast-2a
+  # qb-subnet-public1-ap-northeast-2a
   SubnetA:
     Type: AWS::EC2::Subnet::Id
-    Description: Subnet for tomcat 
-    Default: subnet-a720a1cc
+    Description: public subnet for httpd
+    Default: subnet-009c61a90b1dd402d
   
   myKeyPair:
     Description: 'use for EC2 instance' 
@@ -26,43 +25,28 @@ Parameters:
     Type: AWS::EC2::Image::Id
     Default: ami-0fd0765afb77bcca7
   
-  CodeDeployInstanceProfileName:
-    Description: EC2 Instance Profile for CodeDeploy
-    Type: String
-    Default: CodeDeployDemo-EC2-Instance-Profile
+  HttpdSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group for httpd
+    Default: sg-03f70df752e61b3f8
   
-  Environment:
+  InstanceProfileName:
+    Description: EC2 instance Porilfe access to S3
+    Type: String
+    Default: EC2InstanceProfileS3
+  
+  Env:
     Description: 'dev, prod'
     Type: String
-    Default: 'dev'
+    Default: dev
 
 Resources:
-
-  HttpdSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: 'launch-template-httpd-sg'
-      GroupDescription: >-
-        Enable HTTP accrss via port 80 & port 22 
-      VpcId: !Ref vpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: "Name"
-          Value: 'launch-template-httpd-sg'
 
 # Launch template for the tomcat app servers & supporting config files
   HttpdLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      LaunchTemplateName: 'Launch-Template-HTTPD'
+      LaunchTemplateName: 'cf-Launch-Template-HTTPD'
       LaunchTemplateData:
         NetworkInterfaces:
           - DeviceIndex: 0
@@ -72,9 +56,10 @@ Resources:
             Groups:
               - !Ref HttpdSecurityGroup
         ImageId: !Ref AMI
+        # Instance Profile Name
         IamInstanceProfile: 
-          Name: !Ref CodeDeployInstanceProfileName
-        InstanceType: t3.micro
+          Arn: !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/${InstanceProfileName}
+        InstanceType: t3.medium
         KeyName: !Ref myKeyPair
         TagSpecifications:
         - ResourceType: instance
@@ -90,22 +75,22 @@ Resources:
             cd /home/ec2-user
             
             # modify kuernel setting
-            aws s3 cp s3://${BucketName}/${Environment}/lib/config/qb/sysctl.conf sysctl.conf
+            aws s3api get-object --bucket ${BucketName} --key ${Env}/config/qb/sysctl.conf sysctl.conf
             cp sysctl.conf /etc/sysctl.conf
             sysctl -p
 
             # install and configure mod_jk
-            aws s3 cp s3://${BucketName}/${Environment}/lib/qb/mod_jk.so /etc/httpd/modules/mod_jk.so
+            aws s3api get-object --bucket ${BucketName} --key ${Env}/lib/qb/mod_jk.so /etc/httpd/modules/mod_jk.so
             chmod 755 /etc/httpd/modules/mod_jk.so
-            aws s3 cp  s3://${BucketName}/${Environment}/config/qb/httpd-jk.conf /etc/httpd/conf.modules.d/httpd-jk.conf
-            aws s3 cp  s3://${BucketName}/${Environment}/config/qb/uriworkermap.properties /etc/httpd/conf.d/uriworkermap.properties
-            aws s3 cp  s3://${BucketName}/${Environment}/config/qb/workers.properties /etc/httpd/conf.d/workers.properties
+            aws s3api get-object  --bucket ${BucketName} --key ${Env}/config/qb/httpd-jk.conf /etc/httpd/conf.modules.d/httpd-jk.conf
+            aws s3api get-object  --bucket ${BucketName} --key ${Env}/config/qb/uriworkermap.properties /etc/httpd/conf.d/uriworkermap.properties
+            aws s3api get-object  --bucket ${BucketName} --key ${Env}/config/qb/workers.properties /etc/httpd/conf.d/workers.properties
 
             # configure mpm event module
-            aws s3 cp  s3://${BucketName}/${Environment}/config/qb/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
+            aws s3api get-object  --bucket ${BucketName} --key ${Env}/config/qb/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
             # configure virutal host
-            aws s3 cp  s3://${BucketName}/${Environment}/config/qb/vhost.conf /etc/httpd/conf.d/vhost.conf
+            aws s3api get-object  --bucket ${BucketName} --key ${Env}/config/qb/vhost.conf /etc/httpd/conf.d/vhost.conf
 
             systemctl start httpd
             systemctl enable httpd

@@ -1,9 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Create Security Group and Instance Profile
-Parameters:
-  vpcId:
-    Type: AWS::EC2::VPC::Id
-    Default: vpc-435bcc28
 
 Resources:
 
@@ -25,31 +21,26 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: 
-                  - "s3:PubOjbect"
+                  - "s3:PutOjbect"
                   - "s3:Get*"
                   - "s3:List"
                 Resource: "*"
           PolicyName: OssEC2S3Access
       RoleName: cf-OssEC2S3AccessRole
 
-  WasEC2InstanceProfile:
+  EC2InstanceProfileS3:
     Type: AWS::IAM::InstanceProfile
     Properties: 
-      InstanceProfileName: WasEC2InstanceProfile
+      InstanceProfileName: EC2InstanceProfileS3
       Roles: 
         - !Ref EC2InstanceS3AccessRole
 
 
 Outputs:
-  EC2InstanceS3AccessRole:
-    Value: !Ref EC2InstanceS3AccessRole
+  EC2InstanceProfileS3:
+    Value: !Ref EC2InstanceProfileS3
     Export:
-      Name: EC2InstanceS3AccessRole
-
-  WasEC2InstanceProfile:
-    Value: !Ref WasEC2InstanceProfile
-    Export:
-      Name: WasEC2InstanceProfile
+      Name: EC2InstanceProfileS3
 
 
 

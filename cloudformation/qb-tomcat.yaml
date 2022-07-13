@@ -4,13 +4,13 @@ Parameters:
 # Imports
   vpcId:
     Type: AWS::EC2::VPC::Id
-    Default: vpc-435bcc28
+    Default: vpc-08e429b53dcd87621
   
-  # ap-northeast-2a
+  # qb-subnet-private1-ap-northeast-2a
   SubnetA:
     Type: AWS::EC2::Subnet::Id
     Description: Subnet for tomcat 
-    Default: subnet-a720a1cc
+    Default: subnet-0d27f71424c62a78e
 
   MyKeyPair:
     Description: 'use for EC2 instance' 
@@ -18,14 +18,14 @@ Parameters:
     Default: aws-ec2
 
   WasSecurityGroup:
-    Type: String
+    Type: AWS::EC2::SecurityGroup::Id
     Description: Security group for tomcat
-    Default: sg-0394508f53d595c71
+    Default: sg-049e4d876729a83c1
 
   InstanceProfileName:
     Description: EC2 instance Porilfe access to S3
     Type: String
-    Default: WasEC2InstanceProfile 
+    Default: EC2InstanceProfileS3 
 
   BucketName:
     Type: String
@@ -36,7 +36,7 @@ Parameters:
     Type: AWS::EC2::Image::Id
     Default: ami-0fd0765afb77bcca7
 
-  Environment:
+  Env:
     Description: 'dev, prod'
     Type: String
     Default: 'dev'
@@ -67,7 +67,7 @@ Resources:
         - ResourceType: instance
           Tags:
           - Key: Name
-            Value: cf-quarterback tomcat
+            Value: quarterback tomcat
         UserData: 
           Fn::Base64: !Sub |
             #!/bin/bash
@@ -75,7 +75,7 @@ Resources:
             cd /home/ec2-user
 
             # modify kuernel setting
-            aws s3 cp s3://${BucketName}/${Environment}/lib/config/qb/sysctl.conf sysctl.conf
+            aws s3api get-object s3://${BucketName}/${Env}/lib/config/qb/sysctl.conf sysctl.conf
             cp sysctl.conf /etc/sysctl.conf
             sysctl -p
 
@@ -83,11 +83,11 @@ Resources:
             sudo rpm --import https://yum.corretto.aws/corretto.key 
             sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
             sudo yum install -y java-15-amazon-corretto-devel
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/tomcat.service /etc/systemd/system/tomcat.service
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Env}/config/qb/tomcat.service /etc/systemd/system/tomcat.service
             useradd -d /opt/tomcat -s /bin/nologin tomcat
             
             # tommcat install
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/qb/apache-tomcat-9.0.64.tar.gz /tmp/apache-tomcat-9.0.64.tar.gz
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Env}/lib/qb/apache-tomcat-9.0.64.tar.gz /tmp/apache-tomcat-9.0.64.tar.gz
             tar -zxvf /tmp/apache-tomcat-*.tar.gz
             mkdir -p /opt/tomcat
             mv apache-tomcat-9.0.64/* /opt/tomcat
@@ -97,9 +97,9 @@ Resources:
             sudo systemctl start tomcat
             sudo systemctl enable tomcat
             cd /home/ec2-user
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/lib/qb/mysql-connector-java-8.0.29.jar /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/server.xml /opt/tomcat/conf/server.xml
-            sudo aws s3api get-object --bucket ${BucketName} --key ${Environment}/config/qb/context.xml /opt/tomcat/conf/context.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Env}/lib/qb/mysql-connector-java-8.0.29.jar /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Env}/config/qb/server.xml /opt/tomcat/conf/server.xml
+            sudo aws s3api get-object --bucket ${BucketName} --key ${Env}/config/qb/context.xml /opt/tomcat/conf/context.xml
             sudo chown tomcat:tomcat /opt/tomcat/lib/mysql-connector-java-8.0.29.jar
             sudo systemctl restart tomcat
   # TomcatInstance:

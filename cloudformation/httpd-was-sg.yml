@@ -4,7 +4,7 @@ Description: Create Security Group and Instance Profile
 Parameters:
   vpcId:
     Type: AWS::EC2::VPC::Id
-    Default: vpc-435bcc28
+    Default: vpc-08e429b53dcd87621
 
 Resources:
   HttpdSecurityGroup1:
@@ -22,6 +22,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: "Name"
@@ -42,6 +47,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: "Name"
